@@ -1,289 +1,144 @@
-# 🤖 Async AI Chatbot
+# Ollama AI Chatbot
 
-> A professional, asynchronous command-line AI chatbot powered by **Google Gemini**, built with Python using modern async/await patterns, Pydantic validation, structured logging, and a beautiful Rich CLI interface.
+A local, asynchronous command-line chatbot built with Python, Rich, Pydantic, and the Ollama Python client. It runs fully on your PC with the `gemma3:4b` model, so no paid API keys or cloud services are needed.
 
----
+## Features
 
-## ✨ Features
+- Local inference through Ollama
+- Async chat loop with streaming output
+- Conversation memory for multi-turn chats
+- Rich terminal UI
+- Input validation and friendly error messages
+- Clean project layout with `src/`
 
-| Feature                   | Description                                                     |
-| ------------------------- | --------------------------------------------------------------- |
-| 🚀 **Async Architecture** | Non-blocking I/O using `async/await` and `httpx.AsyncClient`    |
-| 🔒 **Validated Config**   | Pydantic models validate all settings before startup            |
-| 💬 **Chat History**       | Full conversation memory throughout the session                 |
-| 🎨 **Rich CLI UI**        | Colorful, formatted terminal interface with panels and Markdown |
-| 📝 **Structured Logging** | File + console logging with timestamps and levels               |
-| 🔄 **Auto Retry**         | Exponential backoff retry for failed API calls                  |
-| 📡 **Streaming**          | Real-time word-by-word response streaming                       |
-| 🛡️ **Error Handling**     | Graceful handling of all error types                            |
-| ✅ **Type Safe**          | Full Python type hints throughout                               |
+## Project Structure
 
----
-
-## 🛠️ Technologies Used
-
-- **Python 3.10+** — Main language
-- **httpx** — Async HTTP client for API requests
-- **Pydantic v2** — Data validation with Python type hints
-- **python-dotenv** — Environment variable management
-- **Rich** — Beautiful terminal formatting and colors
-- **tenacity** — Retry logic with exponential backoff
-- **Google Gemini API** — Free-tier LLM provider
-
----
-
-## 📁 Project Structure
-
-```
+```text
 ai_chatbot/
-│
-├── app/                     # Main application package
-│   ├── __init__.py          # Package marker
-│   ├── main.py              # Entry point
-│   ├── chat.py              # Chat loop and session management
-│   ├── client.py            # Gemini API client (async)
-│   ├── config.py            # Configuration loading and validation
-│   ├── models.py            # Pydantic data models
-│   ├── logger.py            # Logging setup
-│   └── ui.py                # CLI interface and formatting
-│
-├── logs/                    # Log files (auto-created)
-│   └── chatbot.log
-│
-├── .env                     # 🔒 Your secrets (NOT in Git)
-├── .env.example             # Safe template for .env
-├── .gitignore               # Files Git ignores
-├── requirements.txt         # Python dependencies
-└── README.md                # This file
+├── src/
+│   └── ai_chatbot/
+│       ├── __init__.py
+│       ├── main.py
+│       ├── chat.py
+│       ├── client.py
+│       ├── config.py
+│       ├── models.py
+│       ├── logger.py
+│       └── ui.py
+├── tests/
+├── docs/
+├── notebooks/
+├── logs/
+├── pyproject.toml
+├── uv.lock
+├── CHANGELOG.md
+├── .env
+└── .env.example
 ```
 
----
-
-## ⚡ Quick Start
-
-### Step 1: Prerequisites
+## Requirements
 
 - Python 3.10 or newer
-- A free Google Gemini API key ([get one here](https://aistudio.google.com/app/apikey))
+- [Ollama](https://ollama.com/download) installed locally
+- The `gemma3:4b` model pulled into Ollama
 
-### Step 2: Clone or Download
+## Setup
 
-```bash
-# If you have git:
-git clone https://github.com/yourusername/ai-chatbot.git
-cd ai-chatbot
+### 1. Install dependencies
 
-# Or just download and extract the ZIP, then open a terminal in the folder
+From the project root, run:
+
+```powershell
+uv sync
 ```
 
-### Step 3: Create Virtual Environment
+This installs the Python packages into `.venv` and uses the versions locked in `uv.lock`.
 
-```bash
-# Windows
-python -m venv venv
-venv\Scripts\activate
+### 2. Make sure Ollama is running
 
-# Mac/Linux
-python3 -m venv venv
-source venv/bin/activate
+Start Ollama from the app or the terminal, then confirm it is available at:
+
+```text
+http://localhost:11434
 ```
 
-You'll see `(venv)` at the start of your terminal prompt.
+### 3. Pull the model if it is missing
 
-If you are using Windows CMD instead of PowerShell, activate the environment with:
+If `gemma3:4b` is not installed yet, run:
 
-```bat
-venv\Scripts\activate.bat
+```powershell
+ollama pull gemma3:4b
 ```
 
-PowerShell uses `venv\Scripts\Activate.ps1`, while CMD uses `venv\Scripts\activate.bat`. If you activate one environment but run the app with another Python executable, dependencies like `rich` will appear to be missing.
+### 4. Run the chatbot
 
-### Step 4: Install Dependencies
-
-```bash
-pip install -r requirements.txt
+```powershell
+uv run ai-chatbot
 ```
 
-### Step 5: Set Up Your API Key
+You can also run the module directly:
 
-```bash
-# Windows
-copy .env.example .env
-
-# Mac/Linux
-cp .env.example .env
+```powershell
+uv run python -m ai_chatbot.main
 ```
 
-Open the `.env` file in any text editor and replace `your_gemini_api_key_here` with your actual API key:
+## How it works
 
-```env
-GEMINI_API_KEY=AIzaSyABCDEF1234567890abcdef
+- The app loads local settings from `.env`.
+- The chat client connects to Ollama on `http://localhost:11434`.
+- Before the UI starts, the app checks that the server is reachable and that `gemma3:4b` exists locally.
+- Conversation history is kept in memory so the model can answer with context.
+- Streaming mode prints the response as it arrives, so the UI feels live.
+
+## Environment Variables
+
+Use `.env` for local settings:
+
+| Variable          | Default                  | Purpose                               |
+| ----------------- | ------------------------ | ------------------------------------- |
+| `OLLAMA_HOST`     | `http://localhost:11434` | Local Ollama server address           |
+| `OLLAMA_MODEL`    | `gemma3:4b`              | Model to chat with                    |
+| `REQUEST_TIMEOUT` | `30`                     | Seconds to wait before timing out     |
+| `MAX_TOKENS`      | `2048`                   | Maximum tokens to generate            |
+| `MAX_RETRIES`     | `3`                      | Retry attempts for temporary failures |
+| `TEMPERATURE`     | `0.7`                    | Controls how creative the model is    |
+| `SYSTEM_PROMPT`   | helpful assistant prompt | Initial instruction for the model     |
+| `LOG_FILE`        | `logs/chatbot.log`       | Log file path                         |
+| `LOG_LEVEL`       | `INFO`                   | Logging level                         |
+
+## Commands in Chat
+
+- Type anything to chat.
+- Type `exit`, `quit`, or `bye` to leave.
+- Type `clear` to clear the screen.
+- Type `history` to view the current conversation.
+- Type `reset` to start over with a fresh history.
+- Type `help` to show the command list again.
+
+## Troubleshooting
+
+### Ollama is not running
+
+If you see a connection error, start Ollama first and make sure the server is available at `http://localhost:11434`.
+
+### The model is missing
+
+If you see `Run: ollama pull gemma3:4b`, install the model with:
+
+```powershell
+ollama pull gemma3:4b
 ```
 
-### Step 6: Run the Chatbot
+### The chatbot is slow or times out
 
-```bash
-python -m app.main
-```
+Try increasing `REQUEST_TIMEOUT` in `.env`.
 
----
+### The terminal looks blank or weird
 
-## 💬 Usage
+Make sure your terminal supports ANSI colors and Rich formatting.
 
-Once running, you can:
+## Notes
 
-| Command                 | Action                                     |
-| ----------------------- | ------------------------------------------ |
-| Type anything           | Send a message to the AI                   |
-| `exit` / `quit` / `bye` | Exit the chatbot                           |
-| `clear`                 | Clear the terminal screen                  |
-| `history`               | Show conversation history                  |
-| `reset`                 | Clear history and start a new conversation |
-| `help`                  | Show all commands                          |
-| `Ctrl+C`                | Force interrupt                            |
-
-### Example Session
-
-```
-┌─ You ───────────────────────────────────┐
-└─ ❯ What is a black hole?
-
-🤖 Gemini is writing...
-
-A black hole is a region in space where gravity is so strong
-that nothing — not even light — can escape from it...
-
-┌─ You ───────────────────────────────────┐
-└─ ❯ How are they formed?
-
-🤖 Gemini is writing...
-
-Black holes form when massive stars run out of fuel...
-```
-
----
-
-## ⚙️ Configuration
-
-All settings live in your `.env` file:
-
-| Variable          | Default            | Description               |
-| ----------------- | ------------------ | ------------------------- |
-| `GEMINI_API_KEY`  | _(required)_       | Your Gemini API key       |
-| `GEMINI_MODEL`    | `gemini-1.5-flash` | Model to use              |
-| `REQUEST_TIMEOUT` | `30`               | Seconds before timeout    |
-| `MAX_TOKENS`      | `2048`             | Max response length       |
-| `MAX_RETRIES`     | `3`                | Retry attempts on failure |
-| `LOG_FILE`        | `logs/chatbot.log` | Log file location         |
-| `LOG_LEVEL`       | `INFO`             | Logging verbosity         |
-
----
-
-## 📋 Logging
-
-Logs are saved to `logs/chatbot.log`. Each line includes:
-
-```
-2024-01-15 14:30:25 | INFO     | ai_chatbot:client.py:87 | Sending message to Gemini
-2024-01-15 14:30:26 | INFO     | ai_chatbot:client.py:124| Response received: 245 chars
-2024-01-15 14:30:45 | ERROR    | ai_chatbot:client.py:156| Timeout error: exceeded 30s
-```
-
----
-
-## 🔄 Architecture: How Data Flows
-
-```
-User Input
-    │
-    ▼
-chat.py (ChatSession.process_message)
-    │  Validates input, handles commands
-    ▼
-client.py (GeminiClient.send_message)
-    │  Validates with Pydantic models
-    │  Builds request body
-    ▼
-httpx.AsyncClient.post()
-    │  Async HTTP request
-    ▼
-Google Gemini API
-    │  AI generates response
-    ▼
-client.py (parse + validate response)
-    │  GeminiResponse Pydantic model
-    ▼
-chat.py (add to history, display)
-    │
-    ▼
-ui.py (Rich formatted output)
-    │
-    ▼
-User sees the response
-```
-
----
-
-## 🚨 Troubleshooting
-
-### "Configuration Error: Please set a real Gemini API key"
-
-- Open `.env` file
-- Replace `your_gemini_api_key_here` with your actual API key
-- Get a free key at: https://aistudio.google.com/app/apikey
-
-### "Cannot connect to Gemini API"
-
-- Check your internet connection
-- Try opening https://google.com in a browser
-- Check if a firewall/VPN might be blocking the connection
-
-### "Request timed out"
-
-- Increase `REQUEST_TIMEOUT` in `.env` (try `60`)
-- Check your internet speed
-
-### "Rate limit exceeded (429)"
-
-- Wait 1-2 minutes before trying again
-- Gemini free tier has usage limits
-
-### "ModuleNotFoundError"
-
-- Make sure your virtual environment is activated: `venv\Scripts\activate`
-- If you are in CMD, use `venv\Scripts\activate.bat`
-- Verify you are running the same interpreter that installed your packages
-- Run: `pip install -r requirements.txt`
-
-### Logs show errors
-
-- Check `logs/chatbot.log` for detailed error messages
-- Set `LOG_LEVEL=DEBUG` in `.env` for maximum verbosity
-
----
-
-## 🔮 Future Improvements
-
-- [ ] Multiple LLM provider support (OpenAI, Claude, Ollama)
-- [ ] Save/load conversation history to/from files
-- [ ] Web interface using FastAPI
-- [ ] Voice input/output
-- [ ] Custom system prompts
-- [ ] Token usage tracking
-- [ ] Cost estimation display
-- [ ] Multi-turn conversation templates
-
----
-
-## 📄 License
-
-This project is for educational purposes. Feel free to use, modify, and share it!
-
----
-
-## 🙏 Acknowledgments
-
-- [Google Gemini API](https://ai.google.dev/) — Free tier AI access
-- [Rich](https://github.com/Textualize/rich) — Beautiful terminal output
-- [Pydantic](https://docs.pydantic.dev/) — Data validation
-- [httpx](https://www.python-httpx.org/) — Async HTTP
+- No API key is required.
+- No Gemini or OpenAI cloud service is used.
+- Everything runs locally through Ollama.

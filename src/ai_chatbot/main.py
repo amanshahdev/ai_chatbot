@@ -1,7 +1,7 @@
 """
 main.py - The Entry Point
 
-This is the FIRST file that runs when you type: python -m app.main
+This is the FIRST file that runs when you type: python -m ai_chatbot.main
 
 Think of it as the "front door" of the application.
 Its only job is to:
@@ -27,10 +27,10 @@ import sys
 import os
 
 # Import our main chat runner function
-from app.chat import run_chatbot
+from ai_chatbot.chat import run_chatbot
 
 # Import logger setup (we set up a basic logger before config loads)
-from app.logger import setup_logger
+from ai_chatbot.logger import setup_logger
 
 
 def main() -> None:
