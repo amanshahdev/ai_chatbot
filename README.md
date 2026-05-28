@@ -6,17 +6,17 @@
 
 ## ✨ Features
 
-| Feature | Description |
-|---|---|
-| 🚀 **Async Architecture** | Non-blocking I/O using `async/await` and `httpx.AsyncClient` |
-| 🔒 **Validated Config** | Pydantic models validate all settings before startup |
-| 💬 **Chat History** | Full conversation memory throughout the session |
-| 🎨 **Rich CLI UI** | Colorful, formatted terminal interface with panels and Markdown |
-| 📝 **Structured Logging** | File + console logging with timestamps and levels |
-| 🔄 **Auto Retry** | Exponential backoff retry for failed API calls |
-| 📡 **Streaming** | Real-time word-by-word response streaming |
-| 🛡️ **Error Handling** | Graceful handling of all error types |
-| ✅ **Type Safe** | Full Python type hints throughout |
+| Feature                   | Description                                                     |
+| ------------------------- | --------------------------------------------------------------- |
+| 🚀 **Async Architecture** | Non-blocking I/O using `async/await` and `httpx.AsyncClient`    |
+| 🔒 **Validated Config**   | Pydantic models validate all settings before startup            |
+| 💬 **Chat History**       | Full conversation memory throughout the session                 |
+| 🎨 **Rich CLI UI**        | Colorful, formatted terminal interface with panels and Markdown |
+| 📝 **Structured Logging** | File + console logging with timestamps and levels               |
+| 🔄 **Auto Retry**         | Exponential backoff retry for failed API calls                  |
+| 📡 **Streaming**          | Real-time word-by-word response streaming                       |
+| 🛡️ **Error Handling**     | Graceful handling of all error types                            |
+| ✅ **Type Safe**          | Full Python type hints throughout                               |
 
 ---
 
@@ -90,6 +90,14 @@ source venv/bin/activate
 
 You'll see `(venv)` at the start of your terminal prompt.
 
+If you are using Windows CMD instead of PowerShell, activate the environment with:
+
+```bat
+venv\Scripts\activate.bat
+```
+
+PowerShell uses `venv\Scripts\Activate.ps1`, while CMD uses `venv\Scripts\activate.bat`. If you activate one environment but run the app with another Python executable, dependencies like `rich` will appear to be missing.
+
 ### Step 4: Install Dependencies
 
 ```bash
@@ -124,15 +132,15 @@ python -m app.main
 
 Once running, you can:
 
-| Command | Action |
-|---|---|
-| Type anything | Send a message to the AI |
-| `exit` / `quit` / `bye` | Exit the chatbot |
-| `clear` | Clear the terminal screen |
-| `history` | Show conversation history |
-| `reset` | Clear history and start a new conversation |
-| `help` | Show all commands |
-| `Ctrl+C` | Force interrupt |
+| Command                 | Action                                     |
+| ----------------------- | ------------------------------------------ |
+| Type anything           | Send a message to the AI                   |
+| `exit` / `quit` / `bye` | Exit the chatbot                           |
+| `clear`                 | Clear the terminal screen                  |
+| `history`               | Show conversation history                  |
+| `reset`                 | Clear history and start a new conversation |
+| `help`                  | Show all commands                          |
+| `Ctrl+C`                | Force interrupt                            |
 
 ### Example Session
 
@@ -159,15 +167,15 @@ Black holes form when massive stars run out of fuel...
 
 All settings live in your `.env` file:
 
-| Variable | Default | Description |
-|---|---|---|
-| `GEMINI_API_KEY` | *(required)* | Your Gemini API key |
-| `GEMINI_MODEL` | `gemini-1.5-flash` | Model to use |
-| `REQUEST_TIMEOUT` | `30` | Seconds before timeout |
-| `MAX_TOKENS` | `2048` | Max response length |
-| `MAX_RETRIES` | `3` | Retry attempts on failure |
-| `LOG_FILE` | `logs/chatbot.log` | Log file location |
-| `LOG_LEVEL` | `INFO` | Logging verbosity |
+| Variable          | Default            | Description               |
+| ----------------- | ------------------ | ------------------------- |
+| `GEMINI_API_KEY`  | _(required)_       | Your Gemini API key       |
+| `GEMINI_MODEL`    | `gemini-1.5-flash` | Model to use              |
+| `REQUEST_TIMEOUT` | `30`               | Seconds before timeout    |
+| `MAX_TOKENS`      | `2048`             | Max response length       |
+| `MAX_RETRIES`     | `3`                | Retry attempts on failure |
+| `LOG_FILE`        | `logs/chatbot.log` | Log file location         |
+| `LOG_LEVEL`       | `INFO`             | Logging verbosity         |
 
 ---
 
@@ -219,28 +227,36 @@ User sees the response
 ## 🚨 Troubleshooting
 
 ### "Configuration Error: Please set a real Gemini API key"
+
 - Open `.env` file
 - Replace `your_gemini_api_key_here` with your actual API key
 - Get a free key at: https://aistudio.google.com/app/apikey
 
 ### "Cannot connect to Gemini API"
+
 - Check your internet connection
 - Try opening https://google.com in a browser
 - Check if a firewall/VPN might be blocking the connection
 
 ### "Request timed out"
+
 - Increase `REQUEST_TIMEOUT` in `.env` (try `60`)
 - Check your internet speed
 
 ### "Rate limit exceeded (429)"
+
 - Wait 1-2 minutes before trying again
 - Gemini free tier has usage limits
 
 ### "ModuleNotFoundError"
+
 - Make sure your virtual environment is activated: `venv\Scripts\activate`
+- If you are in CMD, use `venv\Scripts\activate.bat`
+- Verify you are running the same interpreter that installed your packages
 - Run: `pip install -r requirements.txt`
 
 ### Logs show errors
+
 - Check `logs/chatbot.log` for detailed error messages
 - Set `LOG_LEVEL=DEBUG` in `.env` for maximum verbosity
 
