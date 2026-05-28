@@ -1,0 +1,112 @@
+# ============================================================
+# .gitignore — Files and Folders Git Should IGNORE
+# ============================================================
+# 
+# When you run 'git add .', Git will NOT add any file listed here.
+# This protects your secrets and keeps the repository clean.
+#
+# Rules:
+#   *.log       = any file ending in .log
+#   logs/       = the entire logs folder
+#   .env        = the specific file called .env
+#   __pycache__/ = Python's cache folders
+# ============================================================
+
+
+# ── SECRETS — NEVER commit these! ──────────────────────────
+.env
+.env.local
+.env.production
+*.key
+*.secret
+
+
+# ── Python Files ────────────────────────────────────────────
+# Python creates these automatically — they're not source code
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environment folders — these are huge and regenerable
+venv/
+env/
+ENV/
+.venv/
+.env/
+virtualenv/
+
+# Python package distribution files
+dist/
+build/
+*.egg-info/
+*.egg
+wheels/
+*.whl
+MANIFEST
+
+
+# ── Logs and Runtime Data ────────────────────────────────────
+# Log files contain personal data (chat history) and can be huge
+logs/
+*.log
+*.log.*
+
+
+# ── IDE and Editor Files ─────────────────────────────────────
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Vim
+*.swp
+*.swo
+*~
+
+
+# ── Operating System Files ───────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+.directory
+
+
+# ── Testing and Coverage ─────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
+
+
+# ── Type Checking ────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+
+# ── Temporary Files ──────────────────────────────────────────
+*.tmp
+*.temp
+tmp/
+temp/
