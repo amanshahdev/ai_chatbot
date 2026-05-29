@@ -52,7 +52,9 @@ class ChatSession:
         self.client = client
         self.history: List[Dict[str, str]] = []
         self.message_count: int = 0
-        self.streaming_enabled: bool = config.thinking and client.supports_streaming
+        # Streaming should be enabled when the provider supports it and
+        # the user has NOT requested "thinking" (non-streaming) mode.
+        self.streaming_enabled: bool = client.supports_streaming and not config.thinking
         logger.info("New chat session started")
 
     def add_to_history(self, role: str, text: str) -> None:
