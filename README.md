@@ -1,10 +1,10 @@
-# Ollama AI Chatbot
+# AI Chatbot
 
-A local, asynchronous command-line chatbot built with Python, Rich, Pydantic, and the Ollama Python client. It runs fully on your PC with the `gemma3:4b` model, so no paid API keys or cloud services are needed.
+An asynchronous command-line chatbot built with Python, Rich, and Pydantic. It can talk to either local Ollama or the Gemini API, and you can choose the provider from the command line.
 
 ## Features
 
-- Local inference through Ollama
+- Provider selection for Ollama or Gemini
 - Async chat loop with streaming output
 - Conversation memory for multi-turn chats
 - Rich terminal UI
@@ -39,8 +39,8 @@ ai_chatbot/
 ## Requirements
 
 - Python 3.10 or newer
-- [Ollama](https://ollama.com/download) installed locally
-- The `gemma3:4b` model pulled into Ollama
+- For Ollama: [Ollama](https://ollama.com/download) installed locally and a pulled model such as `gemma3:4b`
+- For Gemini: a valid Gemini API key and access to a Gemini model
 
 ## Setup
 
@@ -54,9 +54,13 @@ uv sync
 
 This installs the Python packages into `.venv` and uses the versions locked in `uv.lock`.
 
-### 2. Make sure Ollama is running
+### 2. Choose a provider
 
-Start Ollama from the app or the terminal, then confirm it is available at:
+Set `LLM_PROVIDER=ollama` for local inference or `LLM_PROVIDER=gemini` for the Gemini API.
+
+If you use Gemini, also set `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env`.
+
+If you use Ollama, make sure it is running and available at:
 
 ```text
 http://localhost:11434
@@ -76,6 +80,13 @@ ollama pull gemma3:4b
 uv run ai-chatbot
 ```
 
+To select a provider explicitly from the command line:
+
+```powershell
+uv run ai-chatbot --provider gemini --thinking
+uv run ai-chatbot --provider ollama --no-thinking
+```
+
 You can also run the module directly:
 
 ```powershell
@@ -84,9 +95,9 @@ uv run python -m ai_chatbot.main
 
 ## How it works
 
-- The app loads local settings from `.env`.
-- The chat client connects to Ollama on `http://localhost:11434`.
-- Before the UI starts, the app checks that the server is reachable and that `gemma3:4b` exists locally.
+- The app loads settings from `.env` and CLI overrides.
+- The chat client connects to the provider selected by `--provider` or `LLM_PROVIDER`.
+- Before the UI starts, the app checks that the selected provider is reachable and that the chosen model is available.
 - Conversation history is kept in memory so the model can answer with context.
 - Streaming mode prints the response as it arrives, so the UI feels live.
 
@@ -94,17 +105,21 @@ uv run python -m ai_chatbot.main
 
 Use `.env` for local settings:
 
-| Variable          | Default                  | Purpose                               |
-| ----------------- | ------------------------ | ------------------------------------- |
-| `OLLAMA_HOST`     | `http://localhost:11434` | Local Ollama server address           |
-| `OLLAMA_MODEL`    | `gemma3:4b`              | Model to chat with                    |
-| `REQUEST_TIMEOUT` | `30`                     | Seconds to wait before timing out     |
-| `MAX_TOKENS`      | `2048`                   | Maximum tokens to generate            |
-| `MAX_RETRIES`     | `3`                      | Retry attempts for temporary failures |
-| `TEMPERATURE`     | `0.7`                    | Controls how creative the model is    |
-| `SYSTEM_PROMPT`   | helpful assistant prompt | Initial instruction for the model     |
-| `LOG_FILE`        | `logs/chatbot.log`       | Log file path                         |
-| `LOG_LEVEL`       | `INFO`                   | Logging level                         |
+| Variable          | Default                  | Purpose                                 |
+| ----------------- | ------------------------ | --------------------------------------- |
+| `LLM_PROVIDER`    | `ollama`                 | Default provider (`ollama` or `gemini`) |
+| `THINKING`        | `true`                   | Stream responses as they generate       |
+| `OLLAMA_HOST`     | `http://localhost:11434` | Local Ollama server address             |
+| `OLLAMA_MODEL`    | `gemma3:4b`              | Model to chat with                      |
+| `GEMINI_API_KEY`  | empty                    | Gemini API key                          |
+| `GEMINI_MODEL`    | `gemini-2.0-flash`       | Gemini model to chat with               |
+| `REQUEST_TIMEOUT` | `30`                     | Seconds to wait before timing out       |
+| `MAX_TOKENS`      | `2048`                   | Maximum tokens to generate              |
+| `MAX_RETRIES`     | `3`                      | Retry attempts for temporary failures   |
+| `TEMPERATURE`     | `0.7`                    | Controls how creative the model is      |
+| `SYSTEM_PROMPT`   | helpful assistant prompt | Initial instruction for the model       |
+| `LOG_FILE`        | `logs/chatbot.log`       | Log file path                           |
+| `LOG_LEVEL`       | `INFO`                   | Logging level                           |
 
 ## Commands in Chat
 
@@ -119,7 +134,11 @@ Use `.env` for local settings:
 
 ### Ollama is not running
 
-If you see a connection error, start Ollama first and make sure the server is available at `http://localhost:11434`.
+If you see a connection error while using Ollama, start it first and make sure the server is available at `http://localhost:11434`.
+
+### Gemini access errors
+
+If you use Gemini, confirm that `GEMINI_API_KEY` is set and that `GEMINI_MODEL` is a valid model your key can access.
 
 ### The model is missing
 
@@ -139,6 +158,6 @@ Make sure your terminal supports ANSI colors and Rich formatting.
 
 ## Notes
 
-- No API key is required.
-- No Gemini or OpenAI cloud service is used.
-- Everything runs locally through Ollama.
+- Ollama keeps everything local.
+- Gemini requires an API key and network access.
+- You can switch providers without changing the code.

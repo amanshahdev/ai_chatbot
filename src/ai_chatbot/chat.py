@@ -1,8 +1,8 @@
 """
 chat.py - The chatbot conversation loop
 
-This module keeps the original chat flow, but it now talks to a local Ollama
-model instead of the Gemini API.
+This module keeps the original chat flow, but it can now talk to either
+Ollama or Gemini depending on the selected provider.
 """
 
 from __future__ import annotations
@@ -11,11 +11,13 @@ import asyncio
 from typing import Dict, List
 
 from ai_chatbot.client import (
-    OllamaAPIError,
+    ChatClientAPIError,
+    ChatClientConnectionError,
+    ChatClientModelNotFoundError,
+    ChatClientProtocol,
+    ChatClientTimeoutError,
+    GeminiClient,
     OllamaClient,
-    OllamaConnectionError,
-    OllamaModelNotFoundError,
-    OllamaTimeoutError,
 )
 from ai_chatbot.config import load_config
 from ai_chatbot.logger import get_logger, setup_logger
@@ -44,13 +46,13 @@ EXIT_COMMANDS = {"exit", "quit", "bye", "goodbye", "q"}
 class ChatSession:
     """Keep the current conversation state in memory."""
 
-    def __init__(self, config: AppConfig, client: OllamaClient):
-        """Store the app config, Ollama client, and conversation history."""
+    def __init__(self, config: AppConfig, client: ChatClientProtocol):
+        """Store the app config, selected client, and conversation history."""
         self.config = config
         self.client = client
         self.history: List[Dict[str, str]] = []
         self.message_count: int = 0
-        self.streaming_enabled: bool = True
+        self.streaming_enabled: bool = config.thinking and client.supports_streaming
         logger.info("New chat session started")
 
     def add_to_history(self, role: str, text: str) -> None:
@@ -107,56 +109,95 @@ class ChatSession:
             self.message_count += 1
             return True
 
-        except OllamaModelNotFoundError as exc:
+        except ChatClientModelNotFoundError as exc:
             logger.error(f"Model not found: {exc}")
-            print_error(
-                "Model not installed",
-                "Run: ollama pull gemma3:4b\n"
-                f"Details: {exc.message}\n"
-                "Then start the chatbot again.",
-            )
-            return True
-
-        except OllamaConnectionError as exc:
-            logger.error(f"Connection error: {exc}")
-            print_error(
-                "Cannot connect to Ollama",
-                "Make sure Ollama is running locally at http://localhost:11434.\n"
-                f"Details: {exc}",
-            )
-            return True
-
-        except OllamaTimeoutError as exc:
-            logger.error(f"Timeout error: {exc}")
-            print_error(
-                "Request timed out",
-                f"Ollama took too long to answer. Your timeout is set to {self.config.timeout}s.\n"
-                "Try again or increase REQUEST_TIMEOUT in .env.\n"
-                f"Details: {exc}",
-            )
-            return True
-
-        except OllamaAPIError as exc:
-            logger.error(f"API error for message #{self.message_count}: {exc}")
-
-            if exc.status_code == 404:
+            if self.config.provider == "gemini":
+                print_error(
+                    "Model not available",
+                    f"Check GEMINI_MODEL and the Gemini API access for this model.\nDetails: {exc.message}\nThen start the chatbot again.",
+                )
+            else:
                 print_error(
                     "Model not installed",
                     "Run: ollama pull gemma3:4b\n"
-                    f"Details: {exc.message}",
+                    f"Details: {exc.message}\n"
+                    "Then start the chatbot again.",
                 )
-            elif exc.status_code == 429:
+            return True
+
+        except ChatClientConnectionError as exc:
+            logger.error(f"Connection error: {exc}")
+            if self.config.provider == "gemini":
                 print_error(
-                    "Ollama is busy",
-                    "The local model is busy. Wait a moment and try again.",
-                )
-            elif exc.status_code >= 500:
-                print_error(
-                    "Ollama server error",
-                    f"The local Ollama server returned an error. ({exc.message})",
+                    "Cannot connect to Gemini",
+                    f"Make sure your network can reach the Gemini API and GEMINI_API_KEY is valid.\nDetails: {exc}",
                 )
             else:
-                print_error(f"API Error ({exc.status_code})", exc.message)
+                print_error(
+                    "Cannot connect to Ollama",
+                    f"Make sure Ollama is running locally at {self.config.ollama_host}.\n"
+                    f"Details: {exc}",
+                )
+            return True
+
+        except ChatClientTimeoutError as exc:
+            logger.error(f"Timeout error: {exc}")
+            if self.config.provider == "gemini":
+                print_error(
+                    "Request timed out",
+                    f"Gemini took too long to answer. Your timeout is set to {self.config.timeout}s.\n"
+                    "Try again or increase REQUEST_TIMEOUT in .env.\n"
+                    f"Details: {exc}",
+                )
+            else:
+                print_error(
+                    "Request timed out",
+                    f"Ollama took too long to answer. Your timeout is set to {self.config.timeout}s.\n"
+                    "Try again or increase REQUEST_TIMEOUT in .env.\n"
+                    f"Details: {exc}",
+                )
+            return True
+
+        except ChatClientAPIError as exc:
+            logger.error(f"API error for message #{self.message_count}: {exc}")
+
+            if exc.status_code == 404:
+                if self.config.provider == "gemini":
+                    print_error(
+                        "Model not available",
+                        f"Check GEMINI_MODEL and make sure Gemini can access the model.\nDetails: {exc.message}",
+                    )
+                else:
+                    print_error(
+                        "Model not installed",
+                        "Run: ollama pull gemma3:4b\n"
+                        f"Details: {exc.message}",
+                    )
+            elif exc.status_code == 429:
+                if self.config.provider == "gemini":
+                    print_error(
+                        "Gemini rate limited",
+                        "The Gemini API is busy or rate limited right now. Wait a moment and try again.",
+                    )
+                else:
+                    print_error(
+                        "Ollama is busy",
+                        "The local model is busy. Wait a moment and try again.",
+                    )
+            elif exc.status_code >= 500:
+                if self.config.provider == "gemini":
+                    print_error(
+                        "Gemini server error",
+                        f"The Gemini API returned an error. ({exc.message})",
+                    )
+                else:
+                    print_error(
+                        "Ollama server error",
+                        f"The local Ollama server returned an error. ({exc.message})",
+                    )
+            else:
+                provider_name = self.client.provider_label
+                print_error(f"{provider_name} API Error ({exc.status_code})", exc.message)
 
             return True
 
@@ -214,29 +255,40 @@ class ChatSession:
 
         self.add_to_history("user", user_input)
         self.add_to_history("assistant", cleaned)
-        print_ai_message(cleaned, self.config.model_name)
+        print_ai_message(cleaned, f"{self.client.provider_label} / {self.config.model_name}")
         logger.info(f"AI response #{self.message_count + 1} received: {len(response_text)} chars")
 
 
-async def run_chatbot() -> None:
-    """Start the chatbot, verify Ollama, and then enter the conversation loop."""
-    config = load_config()
+async def run_chatbot(provider: str | None = None, thinking: bool | None = None) -> None:
+    """Start the chatbot, verify the selected provider, and then enter the conversation loop."""
+    config = load_config(provider=provider, thinking=thinking)
     setup_logger(name="ai_chatbot", log_file=config.log_file, level=config.log_level)
     logger_configured = get_logger()
     logger_configured.info("Starting AI Chatbot application")
 
     try:
-        async with OllamaClient(config) as client:
-            # We verify the server and model before showing the normal chat UI.
-            await client.verify_ready()
+        client = GeminiClient(config) if config.provider == "gemini" else OllamaClient(config)
+
+        async with client as active_client:
+            # We verify the selected provider before showing the normal chat UI.
+            await active_client.verify_ready()
 
             print_welcome_banner()
             print_help_text()
+            print_system_message(f"Using provider: [bold]{config.provider.title()}[/]")
             print_system_message(f"Using model: [bold]{config.model_name}[/]")
             print_divider()
-            print_system_message(f"Connected to Ollama at {config.ollama_host}")
+            if config.provider == "gemini":
+                print_system_message("Connected to Gemini API")
+            else:
+                print_system_message(f"Connected to Ollama at {config.ollama_host}")
 
-            session = ChatSession(config, client)
+            if config.thinking and not active_client.supports_streaming:
+                print_system_message(
+                    "Thinking mode is enabled, but this provider does not support streaming."
+                )
+
+            session = ChatSession(config, active_client)
             logger_configured.info("Chat session started, entering main loop")
             print_system_message("Ready to chat! Type your message below.")
 
@@ -266,24 +318,48 @@ async def run_chatbot() -> None:
             )
             print_goodbye()
 
-    except OllamaModelNotFoundError as exc:
-        print_error(
-            "Model not installed",
-            f"{exc.message}\n\nDetails: {exc.details}\n\nRun: ollama pull gemma3:4b",
-        )
-    except OllamaConnectionError as exc:
-        print_error(
-            "Cannot connect to Ollama",
-            f"Make sure Ollama is running locally at {config.ollama_host if 'config' in locals() else 'http://localhost:11434'}.\n"
-            f"Details: {exc}",
-        )
-    except OllamaTimeoutError as exc:
-        print_error(
-            "Ollama timed out",
-            f"Ollama did not answer in time.\nDetails: {exc}",
-        )
-    except OllamaAPIError as exc:
-        print_error(
-            "Ollama error",
-            f"{exc.message}\n\nDetails: {exc.details}",
-        )
+    except ChatClientModelNotFoundError as exc:
+        if config.provider == "gemini":
+            print_error(
+                "Model not available",
+                f"{exc.message}\n\nDetails: {exc.details}\n\nCheck GEMINI_MODEL and your API access.",
+            )
+        else:
+            print_error(
+                "Model not installed",
+                f"{exc.message}\n\nDetails: {exc.details}\n\nRun: ollama pull gemma3:4b",
+            )
+    except ChatClientConnectionError as exc:
+        if config.provider == "gemini":
+            print_error(
+                "Cannot connect to Gemini",
+                f"Make sure your network can reach the Gemini API.\nDetails: {exc}",
+            )
+        else:
+            print_error(
+                "Cannot connect to Ollama",
+                f"Make sure Ollama is running locally at {config.ollama_host if 'config' in locals() else 'http://localhost:11434'}.\n"
+                f"Details: {exc}",
+            )
+    except ChatClientTimeoutError as exc:
+        if config.provider == "gemini":
+            print_error(
+                "Gemini timed out",
+                f"Gemini did not answer in time.\nDetails: {exc}",
+            )
+        else:
+            print_error(
+                "Ollama timed out",
+                f"Ollama did not answer in time.\nDetails: {exc}",
+            )
+    except ChatClientAPIError as exc:
+        if config.provider == "gemini":
+            print_error(
+                "Gemini error",
+                f"{exc.message}\n\nDetails: {exc.details}",
+            )
+        else:
+            print_error(
+                "Ollama error",
+                f"{exc.message}\n\nDetails: {exc.details}",
+            )

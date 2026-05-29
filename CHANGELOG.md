@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- Added CLI provider selection for Ollama or Gemini.
+- Added `--thinking` / `--no-thinking` to control streaming-style replies.
+- Added Gemini API support through `GEMINI_API_KEY` and `GEMINI_MODEL`.
+
 ## [0.1.0] - 2026-05-28
 
 - Migrated project layout to src-based packaging (`src/ai_chatbot`).

@@ -1,7 +1,7 @@
 [project]
 name = "ai-chatbot"
 version = "0.1.0"
-description = "Async CLI AI chatbot powered by local Ollama"
+description = "Async CLI AI chatbot powered by Ollama or Gemini"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

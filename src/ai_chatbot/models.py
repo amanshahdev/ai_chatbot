@@ -1,5 +1,5 @@
 """
-models.py - Data Blueprints for the Ollama chatbot
+models.py - Data Blueprints for the chatbot
 
 These models describe the main data the app works with.
 They keep the configuration and chat messages neat and easy to validate.
@@ -10,11 +10,20 @@ from __future__ import annotations
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class AppConfig(BaseModel):
     """Stores the app settings loaded from the .env file."""
+
+    provider: Literal["ollama", "gemini"] = Field(
+        default="ollama",
+        description="Selected LLM provider",
+    )
+    thinking: bool = Field(
+        default=True,
+        description="Whether to stream the assistant response as it generates",
+    )
 
     ollama_host: str = Field(
         default="http://localhost:11434",
@@ -22,7 +31,12 @@ class AppConfig(BaseModel):
     )
     model_name: str = Field(
         default="gemma3:4b",
-        description="Local Ollama model name",
+        description="Model name for the selected provider",
+    )
+    gemini_api_key: str = Field(
+        default="",
+        repr=False,
+        description="Gemini API key",
     )
     timeout: int = Field(
         default=30,
@@ -72,6 +86,15 @@ class AppConfig(BaseModel):
 
         return cleaned_value
 
+    @field_validator("provider")
+    @classmethod
+    def validate_provider(cls, value: str) -> str:
+        """Keep the provider name normalized and supported."""
+        cleaned_value = value.strip().lower()
+        if cleaned_value not in {"ollama", "gemini"}:
+            raise ValueError("provider must be either 'ollama' or 'gemini'")
+        return cleaned_value
+
     @field_validator("model_name")
     @classmethod
     def validate_model_name(cls, value: str) -> str:
@@ -96,6 +119,14 @@ class AppConfig(BaseModel):
     def validate_system_prompt(cls, value: str) -> str:
         """Trim the system prompt so the chat does not carry extra spaces."""
         return value.strip()
+
+    @model_validator(mode="after")
+    def validate_provider_settings(self) -> "AppConfig":
+        """Make sure provider-specific settings are present when needed."""
+        if self.provider == "gemini" and not self.gemini_api_key.strip():
+            raise ValueError("GEMINI_API_KEY is required when provider='gemini'")
+
+        return self
 
 
 class ChatMessage(BaseModel):

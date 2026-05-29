@@ -5,10 +5,11 @@ This is the FIRST file that runs when you type: python -m ai_chatbot.main
 
 Think of it as the "front door" of the application.
 Its only job is to:
-1. Set up basic logging (before config loads)
-2. Call the main async function
-3. Handle top-level exceptions
-4. Exit cleanly
+1. Parse CLI arguments
+2. Set up basic logging (before config loads)
+3. Call the main async function
+4. Handle top-level exceptions
+5. Exit cleanly
 
 Why is this separate from chat.py?
 - Separation of concerns: entry point logic ≠ chat logic
@@ -18,6 +19,7 @@ Why is this separate from chat.py?
 
 # asyncio is Python's async framework
 # asyncio.run() is the way to start an async program from regular Python code
+import argparse
 import asyncio
 
 # sys for system exit and error handling
@@ -33,6 +35,23 @@ from ai_chatbot.chat import run_chatbot
 from ai_chatbot.logger import setup_logger
 
 
+def parse_args() -> argparse.Namespace:
+    """Parse the CLI arguments for provider selection and thinking mode."""
+    parser = argparse.ArgumentParser(description="Run the AI chatbot")
+    parser.add_argument(
+        "--provider",
+        choices=("ollama", "gemini"),
+        help="Select which LLM provider to use",
+    )
+    parser.add_argument(
+        "--thinking",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Enable or disable thinking mode",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
     """
     The main entry point.
@@ -46,6 +65,8 @@ def main() -> None:
     3. Shuts down the event loop cleanly
     """
     
+    args = parse_args()
+
     # ── Set up a basic logger before configuration loads ──
     # This catches any startup errors before the full logger is configured
     # We use default settings here; the full config will replace this
@@ -59,7 +80,7 @@ def main() -> None:
     try:
         # ── Start the async event loop and run the chatbot ──
         # asyncio.run() is the standard way to run async code from a sync context
-        asyncio.run(run_chatbot())
+        asyncio.run(run_chatbot(provider=args.provider, thinking=args.thinking))
     
     except KeyboardInterrupt:
         # User pressed Ctrl+C at the very start (before the chat loop)

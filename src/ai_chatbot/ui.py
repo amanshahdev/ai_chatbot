@@ -48,7 +48,7 @@ def print_welcome_banner() -> None:
     console.clear()
     banner = Text()
     banner.append("AI Chatbot\n", style="bold")
-    banner.append("Powered by local Ollama\n", style="dim")
+    banner.append("Powered by local Ollama and Gemini\n", style="dim")
     panel = Panel(Align.center(banner), padding=(1, 2))
     console.print(panel)
 
